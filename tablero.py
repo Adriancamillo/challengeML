@@ -4,47 +4,51 @@ import plotly.express as px
 from sklearn.cluster import KMeans
 from sklearn.impute import SimpleImputer
 
-# Cargar datos con el delimitador correcto
+# Cargar datos
 df = pd.read_csv('challenge_MLE.csv', delimiter=';')
 
-# Función para manejar la opción "ALL"
-def multiselect_with_all_option(label, options):
-    all_option = ['ALL']
-    selected = st.sidebar.multiselect(label, all_option + options, default=all_option)
-    if 'ALL' in selected:
-        return options
-    else:
-        return selected
+# Función para la opción "ALL"
+def multiselect_all(label, options):
+    all_option = "ALL"
+    if all_option not in options:
+        options = [all_option] + options
+    selected = st.sidebar.multiselect(label, options, default=all_option)
+    if all_option in selected:
+        selected = options[1:]  # Excluir "ALL" de la lista de opciones
+    return selected
 
 # Sidebar para filtros
 st.sidebar.header('Filtros')
-semestre_filtro = multiselect_with_all_option('Selecciona el Semestre', df['periodo'].unique())
-curso_filtro = multiselect_with_all_option('Selecciona el Curso', df['course_name'].unique())
+semestre_filtro = multiselect_all('Selecciona el Semestre', list(df['periodo'].unique()))
+curso_filtro = multiselect_all('Selecciona el Curso', list(df['course_name'].unique()))
 
 # Búsqueda por Legajo
 st.sidebar.header('Búsqueda por Legajo')
 legajo_buscado = st.sidebar.text_input('Ingrese el Legajo')
 
 # Aplicar filtros y búsqueda
-df_filtrado = df[df['periodo'].isin(semestre_filtro) & df['course_name'].isin(curso_filtro)]
+df_filtrado = df.copy()
+if "ALL" not in semestre_filtro:
+    df_filtrado = df_filtrado[df_filtrado['periodo'].isin(semestre_filtro)]
+if "ALL" not in curso_filtro:
+    df_filtrado = df_filtrado[df_filtrado['course_name'].isin(curso_filtro)]
 if legajo_buscado:
     df_filtrado = df_filtrado[df_filtrado['legajo'] == legajo_buscado]
 
-# Seleccionar las columnas para el clustering
-columns_for_clustering = ['nota_parcial', 'nota_final_materia', 'particion']
+# Clustering
+columns_for_clustering = ['particion', 'nota_final_materia']
 df_clustering = df_filtrado[columns_for_clustering]
 
 # Imputación de valores NaN
 imputer = SimpleImputer(strategy='mean')
 df_clustering_imputed = imputer.fit_transform(df_clustering)
 
-# Clustering
 kmeans = KMeans(n_clusters=3)
 df_filtrado['cluster'] = kmeans.fit_predict(df_clustering_imputed)
 
 # Visualización de Clustering
-st.header('Análisis de Clustering de Notas')
-fig1 = px.scatter(df_filtrado, x='nota_parcial', y='nota_final_materia', color='cluster', hover_data=['particion'])
+st.header('Análisis de Clustering de Notas Finales a lo Largo del Tiempo')
+fig1 = px.scatter(df_filtrado, x='particion', y='nota_final_materia', color='cluster')
 st.plotly_chart(fig1)
 
 # Boxplot para Comparaciones

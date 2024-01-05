@@ -48,4 +48,4 @@ corr = df[['nota_final_materia', 'score', 'points_possible']].corr()
 sns.heatmap(corr, annot=True)
 st.pyplot(plt)
 
-# Nota: Este es un esquema básico. Ajusta y expande este código según tus datos y necesidades.
+# Nota: Este es un esquema básico, ajustar y expandir este código según datos y necesidades.

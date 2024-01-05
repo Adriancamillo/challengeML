@@ -1,81 +1,51 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from sklearn.cluster import KMeans
-from sklearn.impute import SimpleImputer
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # Cargar datos
 df = pd.read_csv('challenge_MLE.csv', delimiter=';')
 
-# Función para la opción "ALL"
-def multiselect_all(label, options):
-    all_option = "ALL"
-    if all_option not in options:
-        options = [all_option] + options
-    selected = st.sidebar.multiselect(label, options, default=all_option)
-    if all_option in selected:
-        selected = options[1:]  # Excluir "ALL" de la lista de opciones
-    return selected
+# Preprocesamiento básico (como conversión de fechas si es necesario)
 
-# Sidebar para filtros
-st.sidebar.header('Filtros')
-semestre_filtro = multiselect_all('Selecciona el Semestre', list(df['periodo'].unique()))
-curso_filtro = multiselect_all('Selecciona el Curso', list(df['course_name'].unique()))
+# Sidebar para filtros generales
+st.sidebar.header('Filtros Generales')
+curso_filtro = st.sidebar.multiselect('Selecciona el Curso', df['course_name'].unique(), default=df['course_name'].unique())
 
-# Búsqueda por Legajo
-st.sidebar.header('Búsqueda por Legajo')
-legajo_buscado = st.sidebar.text_input('Ingrese el Legajo')
+# Filtrar por curso
+df_filtrado = df[df['course_name'].isin(curso_filtro)]
 
-# Aplicar filtros y búsqueda
-df_filtrado = df.copy()
-if "ALL" not in semestre_filtro:
-    df_filtrado = df_filtrado[df_filtrado['periodo'].isin(semestre_filtro)]
-if "ALL" not in curso_filtro:
-    df_filtrado = df_filtrado[df_filtrado['course_name'].isin(curso_filtro)]
-if legajo_buscado:
-    df_filtrado = df_filtrado[df_filtrado['legajo'] == legajo_buscado]
-
-# Clustering
-columns_for_clustering = ['particion', 'nota_final_materia']
-df_clustering = df_filtrado[columns_for_clustering]
-
-# Imputación de valores NaN
-imputer = SimpleImputer(strategy='mean')
-df_clustering_imputed = imputer.fit_transform(df_clustering)
-
-kmeans = KMeans(n_clusters=3)
-df_filtrado['cluster'] = kmeans.fit_predict(df_clustering_imputed)
-
-# Visualización de Clustering
-st.header('Análisis de Clustering de Notas Finales a lo Largo del Tiempo')
-fig1 = px.scatter(df_filtrado, x='particion', y='nota_final_materia', color='cluster')
+# Visualización 1: Rendimiento del Estudiante a lo Largo del Tiempo
+st.header('Rendimiento del Estudiante a lo Largo del Tiempo')
+fig1 = px.line(df_filtrado, x='particion', y=['nota_final_materia', 'nota_parcial'], color='course_name')
 st.plotly_chart(fig1)
 
-# Boxplot para Comparaciones
-st.header('Comparación de Notas por Curso')
-fig2 = px.box(df_filtrado, x='course_name', y='nota_final_materia', color='course_name')
+# Visualización 2: Distribución de Notas
+st.header('Distribución de Notas')
+fig2 = px.histogram(df_filtrado, x='nota_final_materia', color='course_name', barmode='overlay')
 st.plotly_chart(fig2)
 
-# Heatmap de Correlación
-if st.checkbox('Mostrar Heatmap de Correlación'):
-    corr = df_filtrado.corr()
-    fig_corr = px.imshow(corr, text_auto=True)
-    st.plotly_chart(fig_corr)
+# Visualización 3: Comparación de Rendimiento por Curso
+st.header('Comparación de Rendimiento por Curso')
+fig3 = px.box(df_filtrado, x='course_name', y='nota_final_materia')
+st.plotly_chart(fig3)
 
-# Gráficos de Líneas para Tendencias Temporales
-if st.checkbox('Mostrar Tendencias Temporales'):
-    fig_line = px.line(df_filtrado, x='particion', y='nota_final_materia', color='course_name')
-    st.plotly_chart(fig_line)
+# Visualización 4: Análisis Temporal de Tareas y Exámenes
+st.header('Análisis Temporal de Tareas y Exámenes')
+df['ass_created_at'] = pd.to_datetime(df['ass_created_at'])  # Asegúrate de convertir las fechas correctamente
+fig4 = px.line(df, x='ass_created_at', y='assignment_id', color='course_name')
+st.plotly_chart(fig4)
 
-# Comparación Avanzada de Notas
-st.header('Comparación Avanzada de Notas')
-opcion_comparacion = st.selectbox('Elige el Tipo de Comparación', ['Por Curso', 'Por Semestre'])
-if opcion_comparacion == 'Por Curso':
-    fig_comp = px.histogram(df_filtrado, x='nota_final_materia', color='course_name', barmode='group')
-else:
-    fig_comp = px.histogram(df_filtrado, x='nota_final_materia', color='periodo', barmode='group')
-st.plotly_chart(fig_comp)
+# Visualización 5: Rendimiento en Tareas
+st.header('Rendimiento en Tareas')
+fig5 = px.scatter(df, x='points_possible', y='score', color='course_name')
+st.plotly_chart(fig5)
 
-# Resumen Estadístico
-if st.checkbox('Mostrar Resumen Estadístico'):
-    st.write(df_filtrado.describe())
+# Visualización 6: Correlaciones entre Notas y Participación en Tareas
+st.header('Correlaciones entre Notas y Participación en Tareas')
+corr = df[['nota_final_materia', 'score', 'points_possible']].corr()
+sns.heatmap(corr, annot=True)
+st.pyplot(plt)
+
+# Nota: Este es un esquema básico. Ajusta y expande este código según tus datos y necesidades.

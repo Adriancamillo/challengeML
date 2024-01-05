@@ -11,5 +11,8 @@ COPY randomForest.py ./
 # Instala las bibliotecas necesarias en el contenedor
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copia el archivo a trabajar (challenge_MLE.csv) al contenedor
+COPY challenge_MLE.csv ./
+
 # Comando para ejecutar el script cuando se inicie el contenedor
 CMD ["python", "./randomForest.py"]

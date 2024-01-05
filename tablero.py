@@ -5,6 +5,11 @@ from pandas.errors import EmptyDataError
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+st.set_page_config(
+    page_title="test app",
+    page_icon="https://media.licdn.com/dms/image/C4D0BAQGpuY3CX_cbjg/company-logo_200_200/0/1673011009508/edmachina_logo?e=1712793600&v=beta&t=_p_ShzcNfukI5ZQM1_mjhr6gm9daWGABXWAkz_5MRic",
+)
+
 # Función para cargar y preprocesar los datos
 @st.cache_data
 def load_data(filepath):
